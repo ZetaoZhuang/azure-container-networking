@@ -4,7 +4,10 @@ import (
 	"github.com/Azure/azure-container-networking/npm/pkg/dataplane/ipsets"
 	"github.com/Azure/azure-container-networking/npm/pkg/dataplane/policies"
 	"github.com/Azure/azure-container-networking/npm/util"
+	"github.com/Microsoft/hcsshim/hcn"
 )
+
+const minutesToKeepStalePodKey = 10
 
 type GenericDataplane interface {
 	BootupDataplane() error
@@ -68,4 +71,53 @@ func (npmPod *updateNPMPod) updateIPSetsToRemove(setNames []*ipsets.IPSetMetadat
 	for _, set := range setNames {
 		npmPod.IPSetsToRemove = append(npmPod.IPSetsToRemove, set.GetPrefixName())
 	}
+}
+
+type npmEndpoint struct {
+	name   string
+	id     string
+	ip     string
+	podKey string
+	// stalePodKey is used to keep track of the previous pod that had this IP
+	stalePodKey *staleKey
+	// Map with Key as Network Policy name to to emulate set
+	// and value as struct{} for minimal memory consumption
+	netPolReference map[string]struct{}
+}
+
+func newNPMEndpoint(endpoint *hcn.HostComputeEndpoint) *npmEndpoint {
+	return &npmEndpoint{
+		name:            endpoint.Name,
+		id:              endpoint.Id,
+		podKey:          unspecifiedPodKey,
+		netPolReference: make(map[string]struct{}),
+		ip:              endpoint.IpConfigurations[0].IpAddress,
+	}
+}
+
+// update creates a new endpoint and marks the old endpoint's pod key as stale
+// currentTime should be time.Now().Unix()
+func (ep *npmEndpoint) update(endpoint *hcn.HostComputeEndpoint, currentTime int64) *npmEndpoint {
+	newEP := newNPMEndpoint(endpoint)
+	newEP.stalePodKey = &staleKey{
+		key:       ep.podKey,
+		timestamp: currentTime,
+	}
+	return newEP
+}
+
+// shouldDelete if enough time has passed since the last update.
+// Should pass in time.Now().Unix() as the current time.
+func (ep *npmEndpoint) shouldDelete(currentTime int64) bool {
+	return ep.stalePodKey == nil || ep.stalePodKey.minutesElapsed(currentTime) > minutesToKeepStalePodKey
+}
+
+type staleKey struct {
+	key string
+	// timestamp represents the Unix time this struct was created
+	timestamp int64
+}
+
+func (spk *staleKey) minutesElapsed(currentTime int64) int {
+	return int(currentTime-spk.timestamp) / 60
 }

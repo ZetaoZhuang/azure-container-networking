@@ -46,6 +46,8 @@ func (pMgr *PolicyManager) reconcile() {
 	// not implemented
 }
 
+// addPolicy will add the policy for each specified endpoint if the policy doesn't exist on the endpoint yet,
+// and will add the endpoint to the PodEndpoints of the policy if successful.
 func (pMgr *PolicyManager) addPolicy(policy *NPMNetworkPolicy, endpointList map[string]string) error {
 	klog.Infof("[DataPlane Windows] adding policy %s on %+v", policy.PolicyKey, endpointList)
 	if len(endpointList) == 0 {
@@ -55,6 +57,8 @@ func (pMgr *PolicyManager) addPolicy(policy *NPMNetworkPolicy, endpointList map[
 
 	if policy.PodEndpoints == nil {
 		policy.PodEndpoints = make(map[string]string)
+		// return since there are no endpoints to apply policy on
+		return nil
 	}
 
 	for epIP, epID := range policy.PodEndpoints {
@@ -103,10 +107,11 @@ func (pMgr *PolicyManager) addPolicy(policy *NPMNetworkPolicy, endpointList map[
 	return aggregateErr
 }
 
+// removePolicy will remove the policy from the specified endpoints, or
+// if the endpointList is nil, then the policy will be removed from the PodEndpoints of the policy
 func (pMgr *PolicyManager) removePolicy(policy *NPMNetworkPolicy, endpointList map[string]string) error {
-
 	if endpointList == nil {
-		if policy.PodEndpoints == nil {
+		if len(policy.PodEndpoints) == 0 {
 			klog.Infof("[DataPlane Windows] No Endpoints to remove policy %s on", policy.PolicyKey)
 			return nil
 		}

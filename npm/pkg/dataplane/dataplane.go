@@ -13,7 +13,10 @@ import (
 	"k8s.io/klog"
 )
 
-const reconcileTimeInMinutes = 5
+const (
+	reconcileTimeInMinutes = 5
+	unspecifiedPodKey      = ""
+)
 
 type PolicyMode string
 
@@ -29,8 +32,9 @@ type DataPlane struct {
 	ipsetMgr  *ipsets.IPSetManager
 	networkID string
 	nodeName  string
+	// endpointCache stores all endpoints of the network (including off-node)
 	// Key is PodIP
-	endpointCache  map[string]*NPMEndpoint
+	endpointCache  map[string]*npmEndpoint
 	ioShim         *common.IOShim
 	updatePodCache map[string]*updateNPMPod
 	// pendingPolicies includes the policy keys of policies which may
@@ -39,24 +43,13 @@ type DataPlane struct {
 	stopChannel     <-chan struct{}
 }
 
-// TODO this struct could be made unexported
-type NPMEndpoint struct {
-	Name   string
-	ID     string
-	IP     string
-	PodKey string
-	// Map with Key as Network Policy name to to emulate set
-	// and value as struct{} for minimal memory consumption
-	NetPolReference map[string]struct{}
-}
-
 func NewDataPlane(nodeName string, ioShim *common.IOShim, cfg *Config, stopChannel <-chan struct{}) (*DataPlane, error) {
 	metrics.InitializeAll()
 	dp := &DataPlane{
 		Config:          cfg,
 		policyMgr:       policies.NewPolicyManager(ioShim, cfg.PolicyManagerCfg),
 		ipsetMgr:        ipsets.NewIPSetManager(cfg.IPSetManagerCfg, ioShim),
-		endpointCache:   make(map[string]*NPMEndpoint),
+		endpointCache:   make(map[string]*npmEndpoint),
 		nodeName:        nodeName,
 		ioShim:          ioShim,
 		updatePodCache:  make(map[string]*updateNPMPod),
