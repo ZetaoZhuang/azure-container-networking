@@ -555,9 +555,8 @@ func validateIPSetMemberIP(ip string) bool {
 	// always guaranteed to have ip, not guaranteed to have port + protocol
 	ipDetails := strings.Split(ip, ",")
 	if util.IsIPV4(ipDetails[0]) {
-		return true
+		err := ValidateIPBlock(ipDetails[0])
+		return err == nil
 	}
-
-	err := ValidateIPBlock(ip)
-	return err == nil
+	return false
 }

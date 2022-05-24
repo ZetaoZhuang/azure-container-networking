@@ -1509,3 +1509,55 @@ func assertExpectedInfo(t *testing.T, iMgr *IPSetManager, info *expectedInfo) {
 		require.Equal(t, expectedNumEntries, numEntries, "numEntries mismatch for set %s", set.Name)
 	}
 }
+
+func TestValidateIPSetMemberIP(t *testing.T) {
+	tests := []struct {
+		name    string
+		ipblock string
+		want    bool
+	}{
+		{
+			name:    "cidr",
+			ipblock: "172.17.0.0/16",
+			want:    true,
+		},
+		{
+			name:    "except ipblock",
+			ipblock: "172.17.1.0/24 nomatch",
+			want:    true,
+		},
+		{
+			name:    "incorrect ip format",
+			ipblock: "1234",
+			want:    false,
+		},
+		{
+			name:    "incorrect ip range",
+			ipblock: "256.1.2.3",
+			want:    false,
+		},
+		{
+			name:    "empty cidr",
+			ipblock: "",
+			want:    false,
+		},
+		{
+			name:    "ipv6",
+			ipblock: "2345:0425:2CA1:0000:0000:0567:5673:23b5/24",
+			want:    false,
+		},
+		{
+			name:    "tcp",
+			ipblock: "192.168.0.0/24,tcp:25227",
+			want:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := validateIPSetMemberIP(tt.ipblock)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
