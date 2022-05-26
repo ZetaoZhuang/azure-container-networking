@@ -6,8 +6,6 @@ import (
 	"github.com/Azure/azure-container-networking/npm/util"
 )
 
-const minutesToKeepStalePodKey = 10
-
 type GenericDataplane interface {
 	BootupDataplane() error
 	RunPeriodicTasks()

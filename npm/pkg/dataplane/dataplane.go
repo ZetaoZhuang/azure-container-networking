@@ -13,10 +13,7 @@ import (
 	"k8s.io/klog"
 )
 
-const (
-	reconcileTimeInMinutes = 5
-	unspecifiedPodKey      = ""
-)
+const reconcileTimeInMinutes = 5
 
 type PolicyMode string
 

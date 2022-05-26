@@ -1,5 +1,12 @@
 package dataplane
 
+import "github.com/Microsoft/hcsshim/hcn"
+
+const (
+	unspecifiedPodKey        = ""
+	minutesToKeepStalePodKey = 10
+)
+
 // npmEndpoint holds info relevant for endpoints in windows
 type npmEndpoint struct {
 	name   string
