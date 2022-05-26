@@ -357,5 +357,5 @@ func SliceToString(list []string) string {
 func IsIPV4(ip string) bool {
 	ipOnly := strings.Split(ip, "/")
 	address, err := netip.ParseAddr(ipOnly[0])
-	return (err != nil || address.Is4())
+	return (err == nil && address.Is4())
 }
