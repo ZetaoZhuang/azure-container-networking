@@ -20,6 +20,12 @@ type npmEndpoint struct {
 	netPolReference map[string]struct{}
 }
 
+type staleKey struct {
+	key string
+	// timestamp represents the Unix time this struct was created
+	timestamp int64
+}
+
 // newNPMEndpoint initializes npmEndpoint and copies relevant information from hcn.HostComputeEndpoint.
 // This function must be defined in a file with a windows build tag for proper vendoring since it uses the hcn pkg
 func newNPMEndpoint(endpoint *hcn.HostComputeEndpoint) *npmEndpoint {
@@ -44,18 +50,17 @@ func (ep *npmEndpoint) update(endpoint *hcn.HostComputeEndpoint, currentTime int
 	return newEP
 }
 
+func (ep *npmEndpoint) isStalePodKey(podKey string) bool {
+	return ep.stalePodKey != nil && ep.stalePodKey.key == podKey
+}
+
 // shouldDelete if enough time has passed since the last update.
 // Should pass in time.Now().Unix() as the current time.
 func (ep *npmEndpoint) shouldDelete(currentTime int64) bool {
-	return ep.stalePodKey == nil || ep.stalePodKey.minutesElapsed(currentTime) > minutesToKeepStalePodKey
-}
-
-type staleKey struct {
-	key string
-	// timestamp represents the Unix time this struct was created
-	timestamp int64
-}
-
-func (spk *staleKey) minutesElapsed(currentTime int64) int {
-	return int(currentTime-spk.timestamp) / 60
+	spk := ep.stalePodKey
+	if spk == nil {
+		return true
+	}
+	minutesElapsed := int(currentTime-spk.timestamp) / 60
+	return minutesElapsed > minutesToKeepStalePodKey
 }
