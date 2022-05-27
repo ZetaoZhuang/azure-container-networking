@@ -126,7 +126,7 @@ func (dp *DataPlane) updatePod(pod *updateNPMPod) error {
 		return nil
 	}
 
-	if pod.PodKey == unspecifiedPodKey {
+	if endpoint.podKey == unspecifiedPodKey {
 		// while refreshing pod endpoints, newly discovered endpoints are given an unspecified pod key
 		if pod.PodKey == endpoint.stalePodKey.key {
 			klog.Infof("ignoring pod update since pod with key %s is stale and likely was deleted", pod.PodKey)
