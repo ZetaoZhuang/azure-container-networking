@@ -1443,6 +1443,16 @@ func TestValidateIPSetMemberIP(t *testing.T) {
 			ipblock: "192.168.0.0/24,tcp:25227",
 			want:    true,
 		},
+		{
+			name:    "valid ip no cidr",
+			ipblock: "10.0.0.0",
+			want:    true,
+		},
+		{
+			name:    "invalid cidr",
+			ipblock: "10.0.0.1/33",
+			want:    false,
+		},
 	}
 
 	for _, tt := range tests {
